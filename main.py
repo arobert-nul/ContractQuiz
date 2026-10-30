@@ -1,7 +1,9 @@
 import tkinter as tk
 from name_validation import validate_name
 from question import Question
-from storage import save_result
+from storage import save_result, load_results
+from tkinter import filedialog
+import shutil
 
 QUESTIONS = [
     Question("What is the age range for the TCIAG Contract?", ["13-18", "19-25", "19-45", "All adults"], "A"),
@@ -37,7 +39,7 @@ class QuizApp:
             self.current = 0
             self.score = 0
             self.show_question()
-            
+
     def clear_screen(self):
         """Remove everything from the window."""
         for widget in self.window.winfo_children():
@@ -64,7 +66,7 @@ class QuizApp:
         choice = self.choice.get()
         if choice == "":
             self.feedback_label.config(text="Please choose an answer.", fg="red")
-            returns
+            return
         elif question.is_correct(choice):
             self.score = self.score + 1
             self.feedback_label.config(text="Correct!", fg="green")
@@ -88,6 +90,33 @@ class QuizApp:
                  font=("Arial", 24)).pack(pady=40)
         if not save_result("results.csv", self.name, self.score, len(QUESTIONS)):
             tk.Label(self.window, text="Your result could not be saved.", fg="red").pack()
+        tk.Button(self.window, text="View all results", command=self.show_history).pack(pady=20)
+    
+    def show_history(self):
+        """Show a history of all results"""
+        self.clear_screen()
+        tk.Label(self.window, text="All results", font=("Arial", 24)).pack(pady=20)
+        results = load_results("results.csv")
+        if results == []:
+            tk.Label(self.window, text="No results saved yet.").pack()
+        for row in results:
+            tk.Label(self.window, text=row[0] + " " + row[1] + "/" + row[2]).pack()
+        tk.Button(self.window, text="Export results", command=self.export_results).pack(pady=20)
+        self.export_label = tk.Label(self.window, text="")
+        self.export_label.pack()
+
+    def export_results(self):
+        """Exports results as a CSV"""
+        destination = filedialog.asksaveasfilename(defaultextension=".csv",
+                                                   filetypes=[("CSV files", "*.csv")])
+        if destination == "":
+            return
+        try:
+            shutil.copyfile("results.csv", destination)
+            self.export_label.config(text="Results exported.", fg="green")
+        except OSError:
+            self.export_label.config(text="Export failed.", fg="red")
+
 
 window = tk.Tk()
 app = QuizApp(window)
